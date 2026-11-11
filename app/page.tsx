@@ -1,49 +1,32 @@
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 
-export default function ApplicationPage() {
+export default function CheckInPage() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  // Get dynamic URL for the application page
+  const applyUrl = typeof window !== 'undefined' ? `${window.location.origin}/apply` : '';
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
-    const form = e.currentTarget;
-    const formData = new FormData(form);
+    const formData = new FormData(e.currentTarget);
 
     try {
-      // 1. Upload Payslip
-      const payslipFile = formData.get('payslip') as File;
-      const payslipPath = `payslips/${Date.now()}_${payslipFile.name.replace(/\s+/g, '_')}`;
-      const { error: payErr } = await supabase.storage.from('tenant-docs').upload(payslipPath, payslipFile);
-      if (payErr) throw payErr;
-      const payslipUrl = supabase.storage.from('tenant-docs').getPublicUrl(payslipPath).data.publicUrl;
-
-      // 2. Upload ID
-      const idFile = formData.get('idDocument') as File;
-      const idPath = `ids/${Date.now()}_${idFile.name.replace(/\s+/g, '_')}`;
-      const { error: idErr } = await supabase.storage.from('tenant-docs').upload(idPath, idFile);
-      if (idErr) throw idErr;
-      const idUrl = supabase.storage.from('tenant-docs').getPublicUrl(idPath).data.publicUrl;
-
-      // 3. Save Record
-      const { error: dbErr } = await supabase.from('applications').insert([
+      const { error } = await supabase.from('inspection_visitors').insert([
         {
-          full_name: formData.get('fullName'),
+          first_name: formData.get('firstName'),
+          last_name: formData.get('lastName'),
           email: formData.get('email'),
           phone: formData.get('phone'),
-          current_address: formData.get('address'),
-          employment_status: formData.get('employment'),
-          weekly_income: Number(formData.get('income')),
-          move_in_date: formData.get('moveInDate'),
-          id_document_url: idUrl,
-          payslip_url: payslipUrl,
         },
       ]);
-      if (dbErr) throw dbErr;
 
+      if (error) throw error;
       setSubmitted(true);
     } catch (err: any) {
       alert('Error: ' + err.message);
@@ -55,90 +38,85 @@ export default function ApplicationPage() {
   if (submitted) {
     return (
       <main className="min-h-screen bg-neutral-100 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-2xl shadow-sm border border-neutral-200 max-w-md w-full text-center">
-          <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">✓</div>
-          <h2 className="text-xl font-bold text-neutral-900">Application Submitted</h2>
-          <p className="text-neutral-600 mt-2 text-sm leading-relaxed">
-            Your tenancy application and documents have been submitted directly to the landlord.
-          </p>
+        <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-neutral-200 max-w-md w-full text-center space-y-6">
+          <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
+            ✓
+          </div>
+          
+          <div>
+            <h1 className="text-2xl font-bold text-neutral-900">Check-In Successful!</h1>
+            <p className="text-neutral-600 text-sm mt-1">Thank you for attending the inspection today.</p>
+          </div>
+
+          <div className="p-5 bg-neutral-50 border border-neutral-200 rounded-xl space-y-4">
+            <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wider block">
+              Ready to Apply for this Property?
+            </span>
+            
+            {/* Live QR Code pointing to /apply */}
+            <div className="flex justify-center">
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(applyUrl)}`} 
+                alt="Application Form QR Code"
+                className="w-36 h-36 border p-2 bg-white rounded-lg shadow-sm"
+              />
+            </div>
+
+            <p className="text-xs text-neutral-500">
+              Scan the QR code or click below to start your tenancy application.
+            </p>
+
+            <Link
+              href="/apply"
+              className="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition text-sm text-center"
+            >
+              Start Tenancy Application →
+            </Link>
+          </div>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-neutral-100 py-6 px-4">
-      <div className="max-w-lg mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-neutral-200">
-        <div className="mb-6">
-          <span className="text-xs uppercase tracking-wider font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">
-            Direct Application
+    <main className="min-h-screen bg-neutral-100 py-8 px-4 flex items-center justify-center">
+      <div className="max-w-md w-full bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-neutral-200">
+        <div className="mb-6 text-center">
+          <span className="text-xs uppercase tracking-wider font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+            Open Inspection Check-In
           </span>
-          <h1 className="text-2xl font-bold text-neutral-900 mt-2">Residential Tenancy Form</h1>
-          <p className="text-xs text-neutral-500 mt-1">Please provide accurate information for verification.</p>
+          <h1 className="text-2xl font-bold text-neutral-900 mt-3">Welcome</h1>
+          <p className="text-xs text-neutral-500 mt-1">Please check in to register your attendance.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-sm">
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Full Legal Name</label>
-            <input required name="fullName" type="text" placeholder=" " className="w-full p-2.5 border border-neutral-300 rounded-lg outline-none focus:border-blue-600" />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Email</label>
-              <input required name="email" type="email" placeholder="abc@example.com" className="w-full p-2.5 border border-neutral-300 rounded-lg outline-none focus:border-blue-600" />
+              <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">First Name</label>
+              <input required name="firstName" type="text" placeholder="John" className="w-full p-2.5 border border-neutral-300 rounded-lg outline-none focus:border-blue-600" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Mobile Phone</label>
-              <input required name="phone" type="tel" placeholder="0400 000 000" className="w-full p-2.5 border border-neutral-300 rounded-lg outline-none focus:border-blue-600" />
+              <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Last Name</label>
+              <input required name="lastName" type="text" placeholder="Doe" className="w-full p-2.5 border border-neutral-300 rounded-lg outline-none focus:border-blue-600" />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Current Residential Address</label>
-            <input required name="address" type="text" placeholder="Unit, Street, Suburb, Postcode" className="w-full p-2.5 border border-neutral-300 rounded-lg outline-none focus:border-blue-600" />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Employment</label>
-              <select name="employment" className="w-full p-2.5 border border-neutral-300 rounded-lg outline-none focus:border-blue-600 bg-white">
-                <option value="Full-time">Full-time</option>
-                <option value="Part-time">Part-time</option>
-                <option value="Casual">Casual</option>
-                <option value="Self-employed">Self-employed</option>
-                <option value="Student">Student</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Net Weekly Income ($AUD)</label>
-              <input required name="income" type="number" min="0" placeholder="" className="w-full p-2.5 border border-neutral-300 rounded-lg outline-none focus:border-blue-600" />
-            </div>
+            <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Mobile Phone</label>
+            <input required name="phone" type="tel" placeholder="0400 000 000" className="w-full p-2.5 border border-neutral-300 rounded-lg outline-none focus:border-blue-600" />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Preferred Move-in Date</label>
-            <input required name="moveInDate" type="date" className="w-full p-2.5 border border-neutral-300 rounded-lg outline-none focus:border-blue-600" />
-          </div>
-
-          <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200 space-y-3">
-            <span className="text-xs font-bold text-neutral-800 uppercase tracking-wide block">Verification Documents</span>
-            <div>
-              <label className="block text-xs text-neutral-600 mb-1">Photo ID (Passport / Driver Licence)</label>
-              <input required name="idDocument" type="file" accept="image/*,.pdf" className="w-full text-xs text-neutral-500 file:mr-2 file:py-1.5 file:px-3 file:border-0 file:rounded-md file:bg-neutral-200 file:font-semibold" />
-            </div>
-            <div>
-              <label className="block text-xs text-neutral-600 mb-1">Proof of Income (Recent Payslip)</label>
-              <input required name="payslip" type="file" accept="image/*,.pdf" className="w-full text-xs text-neutral-500 file:mr-2 file:py-1.5 file:px-3 file:border-0 file:rounded-md file:bg-neutral-200 file:font-semibold" />
-            </div>
+            <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Email Address</label>
+            <input required name="email" type="email" placeholder="john@example.com" className="w-full p-2.5 border border-neutral-300 rounded-lg outline-none focus:border-blue-600" />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition duration-150 disabled:bg-neutral-400"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition duration-150 disabled:bg-neutral-400 mt-2"
           >
-            {loading ? 'Submitting Application...' : 'Submit Application'}
+            {loading ? 'Checking in...' : 'Check In to Inspection'}
           </button>
         </form>
       </div>
