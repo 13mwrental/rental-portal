@@ -1,10 +1,12 @@
 'use client';
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import frontViewImg from '../../utils/images/frontview.png';
 
 export default function ApplicationPage() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [leaseTerm, setLeaseTerm] = useState(12);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -28,13 +30,14 @@ export default function ApplicationPage() {
 
       const { error: dbErr } = await supabase.from('applications').insert([
         {
-          full_name: formData.get('fullName'),
+          full_name: `${formData.get('firstName')} ${formData.get('lastName')}`,
           email: formData.get('email'),
           phone: formData.get('phone'),
           current_address: formData.get('address'),
           employment_status: formData.get('employment'),
           weekly_income: Number(formData.get('income')),
           move_in_date: formData.get('moveInDate'),
+          lease_term: leaseTerm,
           id_document_url: idUrl,
           payslip_url: payslipUrl,
         },
@@ -51,12 +54,12 @@ export default function ApplicationPage() {
 
   if (submitted) {
     return (
-      <main className="min-h-screen bg-neutral-100 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-2xl shadow-sm border border-neutral-200 max-w-md w-full text-center">
-          <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">✓</div>
-          <h2 className="text-xl font-bold text-neutral-900">Application Submitted</h2>
-          <p className="text-neutral-600 mt-2 text-sm leading-relaxed">
-            Your tenancy application and documents have been submitted directly to the landlord.
+      <main className="min-h-screen bg-[#F2F2F7] flex items-center justify-center p-4 antialiased">
+        <div className="bg-white/80 backdrop-blur-2xl p-8 rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.06)] border border-white/60 max-w-md w-full text-center space-y-4">
+          <div className="w-16 h-16 bg-[#34C759]/15 text-[#34C759] rounded-full flex items-center justify-center mx-auto text-3xl font-semibold">✓</div>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Application Submitted</h2>
+          <p className="text-slate-500 text-sm leading-relaxed">
+            Your tenancy application has been sent securely to the landlord. Good luck!
           </p>
         </div>
       </main>
@@ -64,80 +67,178 @@ export default function ApplicationPage() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-100 py-6 px-4">
-      <div className="max-w-lg mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-neutral-200">
-        <div className="mb-6">
-          <span className="text-xs uppercase tracking-wider font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">
-            Direct Application
-          </span>
-          <h1 className="text-2xl font-bold text-neutral-900 mt-2">Residential Tenancy Form</h1>
-          <p className="text-xs text-neutral-500 mt-1">Please provide accurate information for verification.</p>
+    <main className="min-h-screen bg-[#F2F2F7] py-10 px-4 antialiased">
+      <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* LEFT COLUMN: Property Card Summary */}
+        <div className="lg:col-span-1 space-y-4">
+          <div className="bg-white/80 backdrop-blur-2xl rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.06)] border border-white/60 overflow-hidden sticky top-6">
+            <div className="h-48 bg-slate-200 relative">
+              <img 
+                src={frontViewImg.src} 
+                alt="Property" 
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <span className="text-xs font-semibold text-[#007AFF] bg-[#007AFF]/10 px-2.5 py-1 rounded-full">
+                  Featured Property
+                </span>
+                <h2 className="text-lg font-bold text-slate-900 mt-2">13 Ben Hogan Ct</h2>
+                <p className="text-xs text-slate-500">Mount Waverley, Victoria</p>
+              </div>
+
+              <div className="border-t border-slate-100 pt-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Rent</span>
+                  <span className="font-bold text-slate-900">$690 per week</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Bond</span>
+                  <span className="font-bold text-slate-900">$3,000</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Available</span>
+                  <span className="font-bold text-emerald-600">Now</span>
+                </div>
+              </div>
+
+              <div className="border-t border-slate-100 pt-3 flex justify-around text-slate-600 text-xs font-semibold">
+                <span>🛏️ 3 Beds</span>
+                <span>🛁 1 Baths</span>
+                <span>🚗 1 Parking</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-sm">
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Full Legal Name</label>
-            <input required name="fullName" type="text" placeholder="John Doe" className="w-full p-2.5 border border-neutral-300 rounded-lg outline-none focus:border-blue-600" />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Email</label>
-              <input required name="email" type="email" placeholder="john@example.com" className="w-full p-2.5 border border-neutral-300 rounded-lg outline-none focus:border-blue-600" />
+        {/* RIGHT COLUMN: Application Form Sections */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white/80 backdrop-blur-2xl p-6 sm:p-8 rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.06)] border border-white/60">
+            
+            <div className="mb-6">
+              <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Tenancy Application Form</h1>
+              <p className="text-xs text-slate-500 mt-1">Complete all sections below to submit your application to the property manager.</p>
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Mobile Phone</label>
-              <input required name="phone" type="tel" placeholder="0400 000 000" className="w-full p-2.5 border border-neutral-300 rounded-lg outline-none focus:border-blue-600" />
-            </div>
-          </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Current Residential Address</label>
-            <input required name="address" type="text" placeholder="Unit, Street, Suburb, Postcode" className="w-full p-2.5 border border-neutral-300 rounded-lg outline-none focus:border-blue-600" />
-          </div>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              
+              {/* SECTION: Lease Preferences */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">Lease Preferences</h3>
+                
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Preferred Lease Start Date</label>
+                  <input required name="moveInDate" type="date" className="w-full px-4 py-3 bg-slate-100/80 border border-slate-200/60 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#007AFF] text-slate-900 text-sm" />
+                </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Employment</label>
-              <select name="employment" className="w-full p-2.5 border border-neutral-300 rounded-lg outline-none focus:border-blue-600 bg-white">
-                <option value="Full-time">Full-time</option>
-                <option value="Part-time">Part-time</option>
-                <option value="Casual">Casual</option>
-                <option value="Self-employed">Self-employed</option>
-                <option value="Student">Student</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Net Weekly Income ($AUD)</label>
-              <input required name="income" type="number" min="0" placeholder="1250" className="w-full p-2.5 border border-neutral-300 rounded-lg outline-none focus:border-blue-600" />
-            </div>
-          </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Initial Lease Term (Months)</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[6, 12, 18, 24].map((m) => (
+                      <button
+                        type="button"
+                        key={m}
+                        onClick={() => setLeaseTerm(m)}
+                        className={`py-2.5 rounded-xl font-semibold text-xs transition-all border ${leaseTerm === m ? 'bg-slate-900 text-white border-slate-900 shadow-sm' : 'bg-slate-100 text-slate-700 border-slate-200/60 hover:bg-slate-200'}`}
+                      >
+                        {m} Months
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 uppercase mb-1">Preferred Move-in Date</label>
-            <input required name="moveInDate" type="date" className="w-full p-2.5 border border-neutral-300 rounded-lg outline-none focus:border-blue-600" />
-          </div>
+              {/* SECTION: Personal Details */}
+              <div className="space-y-4 pt-4 border-t border-slate-100">
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">Personal Details</h3>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">First Name</label>
+                    <input required name="firstName" type="text" placeholder="" className="w-full px-4 py-3 bg-slate-100/80 border border-slate-200/60 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#007AFF] text-slate-900 text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Last Name</label>
+                    <input required name="lastName" type="text" placeholder="" className="w-full px-4 py-3 bg-slate-100/80 border border-slate-200/60 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#007AFF] text-slate-900 text-sm" />
+                  </div>
+                </div>
 
-          <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200 space-y-3">
-            <span className="text-xs font-bold text-neutral-800 uppercase tracking-wide block">Verification Documents</span>
-            <div>
-              <label className="block text-xs text-neutral-600 mb-1">Photo ID (Passport / Driver Licence)</label>
-              <input required name="idDocument" type="file" accept="image/*,.pdf" className="w-full text-xs text-neutral-500 file:mr-2 file:py-1.5 file:px-3 file:border-0 file:rounded-md file:bg-neutral-200 file:font-semibold" />
-            </div>
-            <div>
-              <label className="block text-xs text-neutral-600 mb-1">Proof of Income (Recent Payslip)</label>
-              <input required name="payslip" type="file" accept="image/*,.pdf" className="w-full text-xs text-neutral-500 file:mr-2 file:py-1.5 file:px-3 file:border-0 file:rounded-md file:bg-neutral-200 file:font-semibold" />
-            </div>
-          </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Email Address</label>
+                    <input required name="email" type="email" placeholder="abc@example.com" className="w-full px-4 py-3 bg-slate-100/80 border border-slate-200/60 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#007AFF] text-slate-900 text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Mobile Phone</label>
+                    <input required name="phone" type="tel" placeholder="0400 000 000" className="w-full px-4 py-3 bg-slate-100/80 border border-slate-200/60 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#007AFF] text-slate-900 text-sm" />
+                  </div>
+                </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition duration-150 disabled:bg-neutral-400"
-          >
-            {loading ? 'Submitting Application...' : 'Submit Application'}
-          </button>
-        </form>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Current Address</label>
+                  <input required name="address" type="text" placeholder="Street, Suburb, Postcode" className="w-full px-4 py-3 bg-slate-100/80 border border-slate-200/60 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#007AFF] text-slate-900 text-sm" />
+                </div>
+              </div>
+
+              {/* SECTION: Employment & Income */}
+              <div className="space-y-4 pt-4 border-t border-slate-100">
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">Employment & Income</h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Employment Status</label>
+                    <select name="employment" className="w-full px-4 py-3 bg-slate-100/80 border border-slate-200/60 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#007AFF] text-slate-900 text-sm">
+                      <option value="Full-time">Full-time</option>
+                      <option value="Part-time">Part-time</option>
+                      <option value="Casual">Casual</option>
+                      <option value="Self-employed">Self-employed</option>
+                      <option value="Student">Student</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Net Weekly Income ($AUD)</label>
+                    <input required name="income" type="number" min="0" placeholder="$" className="w-full px-4 py-3 bg-slate-100/80 border border-slate-200/60 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-[#007AFF] text-slate-900 text-sm" />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION: Verification Documents */}
+              <div className="space-y-4 pt-4 border-t border-slate-100">
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">Verification Documents</h3>
+
+                <div className="p-4 bg-slate-100/60 rounded-2xl border border-slate-200/60 space-y-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">Photo ID (Driver Licence or Passport)</label>
+                    <input required name="idDocument" type="file" accept="image/*,.pdf" className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-white file:text-[#007AFF] file:font-semibold shadow-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">Proof of Income (Latest Payslip)</label>
+                    <input required name="payslip" type="file" accept="image/*,.pdf" className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-white file:text-[#007AFF] file:font-semibold shadow-sm" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Terms and Submit */}
+              <div className="pt-4 border-t border-slate-100 space-y-4 text-center">
+                <p className="text-[11px] text-slate-500">
+                  By submitting an application, you accept our <span className="text-[#007AFF] underline cursor-pointer">Terms and Conditions</span> and confirm all information provided is accurate.
+                </p>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-[#E5002B] hover:bg-[#C80024] active:scale-[0.98] text-white font-bold py-4 rounded-2xl transition-all shadow-md text-base disabled:bg-slate-300"
+                >
+                  {loading ? 'Submitting Application...' : 'Submit application'}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+
       </div>
     </main>
   );
