@@ -7,16 +7,66 @@ export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
   const [visitors, setVisitors] = useState<any[]>([]);
   const [apps, setApps] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [tab, setTab] = useState<'visitors' | 'apps'>('visitors');
 
   const fetchData = async () => {
     setLoading(true);
-    const { data: vData } = await supabase.from('inspection_visitors').select('*').order('created_at', { ascending: false });
-    const { data: aData } = await supabase.from('applications').select('*').order('created_at', { ascending: false });
-    setVisitors(vData || []);
-    setApps(aData || []);
-    setLoading(false);
+    setErrorMessage('');
+
+    try {
+      const [visitorsResult, applicationsResult] = await Promise.all([
+        supabase.from('inspection_visitors').select('*').order('created_at', { ascending: false }),
+        supabase.from('applications').select('*').order('created_at', { ascending: false }),
+      ]);
+
+      if (visitorsResult.error) throw visitorsResult.error;
+      if (applicationsResult.error) throw applicationsResult.error;
+
+      setVisitors(visitorsResult.data ?? []);
+      setApps(applicationsResult.data ?? []);
+
+      const { data: documentRows, error: documentsError } = await supabase
+        .from('application_documents')
+        .select('id, application_id, document_type, file_name, storage_path');
+
+      if (documentsError) {
+        setDocuments([]);
+        setErrorMessage(
+          `Applications loaded, but supporting documents could not be loaded: ${documentsError.message}`
+        );
+        return;
+      }
+
+      const documentsWithLinks = await Promise.all(
+        (documentRows ?? []).map(async (document) => {
+          const { data, error } = await supabase.storage
+            .from('tenant-docs')
+            .createSignedUrl(document.storage_path, 60 * 60);
+
+          return {
+            ...document,
+            signedUrl: error ? '' : data.signedUrl,
+            linkError: error?.message,
+          };
+        })
+      );
+
+      setDocuments(documentsWithLinks);
+      const failedLinks = documentsWithLinks.filter((document) => document.linkError);
+      if (failedLinks.length > 0) {
+        setErrorMessage(
+          `${failedLinks.length} supporting document link(s) could not be created. Check storage permissions.`
+        );
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load dashboard data.';
+      setErrorMessage(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -70,6 +120,12 @@ export default function AdminPage() {
         </button>
       </div>
 
+      {errorMessage && (
+        <div role="alert" className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {errorMessage}
+        </div>
+      )}
+
       {/* iOS Segmented Control Tab Switcher */}
       <div className="bg-slate-200/60 p-1 rounded-2xl flex gap-1 mb-6 border border-slate-300/40">
         <button 
@@ -119,20 +175,61 @@ export default function AdminPage() {
           ) : (
             apps.map((app) => (
               <div key={app.id} className="p-5 bg-white/80 backdrop-blur-xl border border-white/60 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
-                <div>
+                <div className="min-w-0 flex-1">
                   <div className="font-bold text-slate-900 text-sm">{app.full_name}</div>
                   <div className="text-xs text-slate-500 mt-0.5">{app.phone} • {app.email}</div>
                   <div className="text-xs text-slate-600 mt-2 bg-slate-100 inline-block px-3 py-1 rounded-lg">
-                    Income: <strong className="text-slate-900">${app.weekly_income}/wk</strong> ({app.employment_status}) • Move-in: {app.move_in_date} • <strong>Lease: {app.lease_term || 12} Mos</strong>
+                    Income: <strong className="text-slate-900">${app.weekly_income}/wk</strong> ({app.employment_status}) • Move-in: {app.move_in_date || 'Not provided'} • <strong>Lease: {app.lease_term || 'Not provided'}{app.lease_term ? ' Mos' : ''}</strong>
                   </div>
-                </div>
-                <div className="flex gap-2 w-full sm:w-auto">
-                  <a href={app.id_document_url} target="_blank" rel="noreferrer" className="flex-1 sm:flex-none text-center text-xs bg-[#007AFF]/10 hover:bg-[#007AFF]/20 text-[#007AFF] font-semibold px-3.5 py-2 rounded-xl transition-all">
-                    View ID
-                  </a>
-                  <a href={app.payslip_url} target="_blank" rel="noreferrer" className="flex-1 sm:flex-none text-center text-xs bg-[#007AFF]/10 hover:bg-[#007AFF]/20 text-[#007AFF] font-semibold px-3.5 py-2 rounded-xl transition-all">
-                    View Payslip
-                  </a>
+                  <div className="mt-2 text-xs text-slate-600">
+                    Occupants: <strong className="text-slate-900">{app.number_of_occupants ?? 'Not provided'}</strong>
+                  </div>
+                  <div className="mt-2 text-xs text-slate-600">
+                    Pets: <strong className="text-slate-900">{app.has_pets == null ? 'Not provided' : app.has_pets ? 'Yes' : 'No'}</strong>
+                    {app.has_pets && app.pet_details && <> • Details: {app.pet_details}</>}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {documents
+                      .filter((document) => String(document.application_id) === String(app.id))
+                      .map((document) => (
+                        document.signedUrl ? (
+                          <a
+                            key={document.id}
+                            href={document.signedUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded-xl bg-[#007AFF]/10 px-3.5 py-2 text-xs font-semibold text-[#007AFF] transition-all hover:bg-[#007AFF]/20"
+                          >
+                            {document.document_type === 'rental_receipt'
+                              ? `Rental Receipt: ${document.file_name}`
+                              : `${document.document_type === 'photo_id' ? 'Photo ID' : 'Payslip'}: ${document.file_name}`}
+                          </a>
+                        ) : null
+                      ))}
+                    {!documents.some((document) => String(document.application_id) === String(app.id)) && (
+                      <span className="text-xs text-slate-400">No supporting documents</span>
+                    )}
+                    {app.id_document_url && (
+                      <a
+                        href={app.id_document_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-xl bg-[#007AFF]/10 px-3.5 py-2 text-xs font-semibold text-[#007AFF] transition-all hover:bg-[#007AFF]/20"
+                      >
+                        View ID
+                      </a>
+                    )}
+                    {app.payslip_url && (
+                      <a
+                        href={app.payslip_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-xl bg-[#007AFF]/10 px-3.5 py-2 text-xs font-semibold text-[#007AFF] transition-all hover:bg-[#007AFF]/20"
+                      >
+                        View Payslip
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
             ))
