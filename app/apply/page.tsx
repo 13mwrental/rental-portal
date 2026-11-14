@@ -891,6 +891,15 @@ export default function ApplicationPage() {
                 ))}
               </section>
 
+              <button
+                type="button"
+                onClick={addApplicant}
+                disabled={loading}
+                className="w-full rounded-xl border border-[#007AFF]/30 bg-[#007AFF]/5 px-4 py-3 text-sm font-semibold text-[#007AFF] transition hover:bg-[#007AFF]/10 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                + Add Another Applicant
+              </button>
+
               {errorMessage && (
                 <div
                   role="alert"
