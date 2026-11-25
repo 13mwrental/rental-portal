@@ -178,6 +178,17 @@ export default function AdminPage() {
                 <div className="min-w-0 flex-1">
                   <div className="font-bold text-slate-900 text-sm">{app.full_name}</div>
                   <div className="text-xs text-slate-500 mt-0.5">{app.phone} • {app.email}</div>
+                  <div className="mt-1 text-xs text-slate-500">
+                    Application ID: <span className="font-mono text-slate-700">{app.id}</span>
+                  </div>
+                  <div className="mt-1 text-xs text-slate-500">
+                    Submitted: {app.created_at
+                      ? new Date(app.created_at).toLocaleString([], {
+                          dateStyle: 'medium',
+                          timeStyle: 'short',
+                        })
+                      : 'Time unavailable'}
+                  </div>
                   <div className="text-xs text-slate-600 mt-2 bg-slate-100 inline-block px-3 py-1 rounded-lg">
                     Income: <strong className="text-slate-900">${app.weekly_income}/wk</strong> ({app.employment_status}) • Move-in: {app.move_in_date || 'Not provided'} • <strong>Lease: {app.lease_term || 'Not provided'}{app.lease_term ? ' Mos' : ''}</strong>
                   </div>
