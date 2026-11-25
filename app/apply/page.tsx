@@ -412,11 +412,11 @@ export default function ApplicationPage() {
               <div className="space-y-2 border-t border-slate-100 pt-4 text-sm">
                 <div className="flex justify-between">
                   <span className="text-slate-500">Rent</span>
-                  <span className="font-bold text-slate-900">$690 per week</span>
+                  <span className="font-bold text-slate-900">$650 per week</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Bond</span>
-                  <span className="font-bold text-slate-900">$3,000</span>
+                  <span className="font-bold text-slate-900">$2825</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Available</span>
